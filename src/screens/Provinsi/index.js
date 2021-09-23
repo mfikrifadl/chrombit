@@ -1,0 +1,126 @@
+/**
+ * Sample React Native App
+ * https://github.com/facebook/react-native
+ *
+ * @format
+ * @flow strict-local
+ */
+
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Axios from 'axios';
+import React, {useState, useEffect, useCallback} from 'react';
+import {
+  SafeAreaView,
+  StyleSheet,
+  View,
+  FlatList,
+  ActivityIndicator,
+} from 'react-native';
+import {CardProvinsi} from '../../component';
+
+const wait = timeout => {
+  return new Promise(resolve => {
+    setTimeout(resolve, timeout);
+  });
+};
+
+const Provinsi = ({navigation}) => {
+  this.state = {
+    dataTable: [],
+  };
+  const [dataTable, setDataTable] = useState('');
+  const [sisa, setSisa] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    getData();
+    wait(2000).then(() => setRefreshing(false));
+  }, []);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', async () => {
+      await AsyncStorage.setItem('idHarian', '');
+      setIsLoading(true);
+      getData();
+      setIsLoading(false);
+    });
+    // Return the function to unsubscribe from the event so it gets removed on unmount
+    return unsubscribe;
+  }, [navigation]);
+
+  const getData = async () => {
+    try {
+      const res = await Axios.get(
+        'https://api.kawalcorona.com/indonesia/provinsi',
+      );
+      setDataTable(Object(res.data));
+    } catch (error) {
+      console.log(error);
+      alert('gagal');
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading === true) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color="#009387" />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        style={styles.cardContainer}
+        data={dataTable}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({item, index}) => (
+          <CardProvinsi item={item} index={index} {...this.props} />
+        )}
+      />
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  scrollView: {
+    flex: 1,
+    padding: 15,
+    justifyContent: 'center',
+  },
+  buttonButtom: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    marginBottom: 36,
+  },
+  addButton: {
+    backgroundColor: '#009387',
+    width: 70,
+    height: 70,
+    position: 'absolute',
+    bottom: -20,
+    right: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 100,
+  },
+  loader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textSisa: {
+    fontSize: 20,
+    marginLeft: 12,
+    marginBottom: 10,
+  },
+});
+
+export default Provinsi;
